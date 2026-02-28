@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<title> Chess </title>
+
+<meta charset="UTF-8">
+<meta name="viewport" contet="width: device-width, initial-scale:1.0">
+<style>
+
+.game {
+  background-color: aqua;
+}
+
+main {
+
+  width: 90%;
+  height: 90%;
+}
+
+#tablero {
+  display:grid;
+  grid-template-columns: repeat(8, auto);  
+}
+
+.casilla {
+  display:flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid blue;
+  font-size: 20px;
+  min-width:7rem;
+  min-height: 7rem;
+}
+
+.claro {
+  background-color: #eee;
+}
+
+.oscuro {
+  background-color: #666;
+  color: white;
+}
+
+.seleccionada {
+  border: 2px solid green;
+}
+
+.opcion {
+  background-color: red;
+}
+
+</style>
+
+</head>
+<body>
+<nav>
+    <h2 id="turno"> Negras empiezan </h2>
+</nav>
+<main>
+<section id="tablero">
+
+</section>
+</main>
+<script defer>
+
+
+// PIEZAS; 
+class Pieza {
+  constructor(blanco, fila, columna){
+    this.blanco = blanco;
+    this.fila = fila;
+    this.columna  = columna;
+    // this.dir = [];
+  }
+
+  movimientos(){ 
+    return [];
+  }
+}
+
+class Peon extends Pieza {
+  constructor(blanco, fila, columna){
+    super(blanco, fila, columna);
+    this.pieza = this.blanco === true ? "P" : "p";
+  }
+  movimientos(tablero){
+    let dir = this.blanco === true ? +1 : -1;
+    let opciones = [];
+    
+
+    if (dentroDelTablero(this.fila + dir, this.columna) && tablero[this.fila+dir][this.columna] === null){
+      opciones.push([this.fila+dir, this.columna]);
+
+      let filaInicial = this.blanco === true ? 1 : 6;
+      
+      if (this.fila === filaInicial && tablero[this.fila+2*dir][this.columna] === null) {
+        opciones.push([this.fila + 2*dir, this.columna]);
+      }
+    }
+    // Diagonal: 
+
+    if (dentroDelTablero(this.fila +dir, this.columna -1) && tablero[this.fila+dir][this.columna -1] !== null){
+      let pieza = tablero[this.fila+dir][this.columna -1];
+      if (pieza.blanco !== this.blanco){
+        opciones.push([this.fila+dir, this.columna-1]);
+      }
+    }
+    if (dentroDelTablero(this.fila +dir, this.columna +1) && tablero[this.fila+dir][this.columna +1] !== null){
+      let pieza = tablero[this.fila+dir][this.columna +1];
+      if (pieza.blanco !== this.blanco){
+        opciones.push([this.fila+dir, this.columna+1]);
+      }
+    }
+    return opciones;
+  }
+}
+
+class Torre extends Pieza {
+  constructor(blanco, fila, columna){
+    super(blanco, fila, columna);
+    this.pieza = this.blanco === true ? "T" : "t"; 
+  }
+  movimientos(tablero) {
+    return [
+       ...rayos(tablero, this, -1, 0),
+       ...rayos(tablero, this, +1, 0),
+       ...rayos(tablero, this, 0, -1),
+       ...rayos(tablero, this, 0, +1),
+    ];
+  }
+}
+
+class Caballo extends Pieza {
+  constructor(blanco, fila, columna){
+    super(blanco, fila, columna);
+    this.pieza = this.blanco === true ? "C" : "c";
+  }
+  movimientos(tablero){
+    return [
+      ...paso(tablero, this, ([+2,+1])),
+      ...paso(tablero, this, ([+2,-1])),
+      ...paso(tablero, this, ([-2,-1])),
+      ...paso(tablero, this, ([-2,+1])),
+      ...paso(tablero, this, ([-1,+2])),
+      ...paso(tablero, this, ([+1,+2])),
+      ...paso(tablero, this, ([-1,-2])),
+      ...paso(tablero, this, ([+1,-2]))
+    ];
+  }
+}
+
+class Alfil extends Pieza {
+  constructor(blanco, fila, columna){
+    super(blanco, fila, columna);
+    this.pieza = this.blanco === true ? "A" : "a";
+  }
+  movimientos(tablero) {
+  return [
+     ...rayos(tablero, this, -1, -1),
+     ...rayos(tablero, this, +1, +1),
+     ...rayos(tablero, this, +1, -1),
+     ...rayos(tablero, this, -1, +1),
+  ];
+}
+}
+
+class Rey extends Pieza {
+  constructor(blanco, fila, columna){
+    super(blanco, fila, columna);
+    this.pieza = this.blanco === true ? "K" : "k";
+  }
+  movimientos(tablero) {
+    return [
+      ...paso(tablero, this, ([-1,-1])),
+      ...paso(tablero, this, ([0 ,-1])),
+      ...paso(tablero, this, ([+1,-1])),
+      ...paso(tablero, this, ([+1,0])),
+      ...paso(tablero, this, ([+1,+1])),
+      ...paso(tablero, this, ([0,+1])),
+      ...paso(tablero, this, ([-1,+1])),
+      ...paso(tablero, this, ([-1,0]))
+    ];
+  }
+}
+ 
+class Reyna extends Pieza {
+  constructor(blanco, fila, columna){
+    super(blanco, fila, columna);
+    this.pieza = this.blanco === true ? "Q" : "q";
+  }
+    movimientos(tablero) {
+    return [
+      ...rayos(tablero, this, -1, 0),
+      ...rayos(tablero, this, +1, 0),
+      ...rayos(tablero, this, 0, -1),
+      ...rayos(tablero, this, 0, +1),
+      ...rayos(tablero, this, -1, -1),
+      ...rayos(tablero, this, +1, +1),
+      ...rayos(tablero, this, +1, -1),
+      ...rayos(tablero, this, -1, +1),
+    ];
+  }
+}
+
+
+// GLOBALES:
+let tablero = [
+  [new Torre(true, 0, 0), new Caballo(true, 0,1), new Alfil(true, 0, 2), 
+  new Rey(true, 0, 3), new Reyna(true, 0,4), 
+  new Alfil(true, 0,5), new Caballo(true, 0,6), new Torre(true, 0,7)],
+  [new Peon(true, 1, 0), new Peon(true, 1,1), new Peon(true, 1, 2), new Peon(true, 1,3),
+   new Peon(true, 1, 4), new Peon(true, 1,5), new Peon(true, 1,6), new Peon(true, 1,7)],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [new Peon(false, 6, 0), new Peon(false, 6,1), new Peon(false, 6, 2), new Peon(false, 6,3),
+  new Peon(false, 6, 4), new Peon(false, 6,5), new Peon(false, 6,6), new Peon(false, 6,7)],
+  [new Torre(false, 7, 0), new Caballo(false, 7,1), new Alfil(false, 7, 2),   new Rey(false, 7, 3), new Reyna(false, 7,4), 
+  new Alfil(false, 7,5), new Caballo(false, 7,6), new Torre(false, 7,7)],
+];
+let turnoBlancas = true;
+let piezaSeleccionada = null;
+
+
+// DOM:
+let tableroGrid = document.getElementById("tablero");
+let turno = document.getElementById("turno");
+
+
+// Renderizacion:
+for (let filaIndex = 0; filaIndex < tablero.length; filaIndex++) {
+  for (let colIndex = 0; colIndex < tablero[filaIndex].length; colIndex++){
+    let casilla = tablero[filaIndex][colIndex];
+    let div = document.createElement("div");
+    div.className = "casilla";
+    div.dataset.fila = filaIndex;
+    div.dataset.col = colIndex;
+    div.onclick = clickCasilla;
+
+    if ( (filaIndex + colIndex) % 2 === 0){
+      div.classList.add("claro");
+    }
+    else {
+      div.classList.add("oscuro");
+    }
+    if (casilla === null) {
+      div.textContent = ".";
+    }
+    else {
+      div.textContent = casilla.pieza;
+    }
+    tableroGrid.appendChild(div);
+  }
+}
+
+
+// Evento principal:
+function clickCasilla(event){
+  let fila = parseInt(event.target.dataset.fila);
+  let col = parseInt(event.target.dataset.col);
+  let pieza = tablero[fila][col];
+  
+
+  if (piezaSeleccionada === null) { 
+    if (pieza === null){return;}
+    if (turnoBlancas !== pieza.blanco){ return;}
+    piezaSeleccionada = pieza;
+    event.target.classList.add("seleccionada");
+    let opciones = pieza.movimientos(tablero);
+    marcarOpciones(opciones);
+  }
+
+  else {
+    const opciones = piezaSeleccionada.movimientos(tablero);
+    const esDestinoValido = opciones.some(([f,c]) => f === fila && c === col);
+    
+    if (
+      (!esDestinoValido) || (piezaSeleccionada === pieza) 
+      || (pieza !== null) && (pieza.blanco === piezaSeleccionada.blanco)) {
+         document.querySelectorAll(".opcion").forEach(el => el.classList.remove("opcion"));
+         document.querySelectorAll(".seleccionada").forEach(el => el.classList.remove("seleccionada"));
+         piezaSeleccionada = null;
+         return;
+      }
+    console.log(fila);
+    console.log(col);
+    mover([piezaSeleccionada.fila, piezaSeleccionada.columna],[fila, col]);
+    document.querySelectorAll(".opcion").forEach(el => el.classList.remove("opcion"));
+    document.querySelectorAll(".seleccionada").forEach(el => el.classList.remove("seleccionada"));
+    piezaSeleccionada = null;
+    turnoBlancas = !turnoBlancas;
+    dar_turno();
+  }
+}
+
+
+// Auxiliares: 
+function dentroDelTablero(fila, col) {
+    return fila >= 0 && fila < 8 && col >= 0 && col < 8;
+}
+
+function dar_turno(){
+  turno.innerText = turnoBlancas ? "turno de: Negras." : "turno de: Blancas";
+}
+
+function marcarOpciones(opciones) {
+
+  for (let [fila, col] of opciones) {
+    let div = document.querySelector(
+      `.casilla[data-fila='${fila}'][data-col='${col}']`);
+    div.classList.add("opcion");
+  }
+}
+
+function actualizarCasilla(fila, col) {
+  const div = document.querySelector(`.casilla[data-fila='${fila}'][data-col='${col}']`);
+  div.textContent = tablero[fila][col] ? tablero[fila][col].pieza : ".";
+}
+
+function mover([o_fila, o_col],[d_fila, d_col]){
+  let pieza = tablero[o_fila][o_col];
+  let piezaPerdida = tablero[d_fila][d_col];
+  pieza.fila = d_fila;
+  pieza.columna = d_col;
+  tablero[o_fila][o_col] = null;
+  tablero[d_fila][d_col] = pieza;
+  actualizarCasilla(o_fila,o_col);
+  actualizarCasilla(d_fila,d_col);
+
+  if (piezaPerdida instanceof(Rey)) {
+    turno.innerText = turnoBlancas ? "Ganan: Negras." : "Ganan: Blancas.";
+    
+    console.log("game")
+  }
+  
+
+}
+
+function rayos(tablero, pieza, dFila, dCol){
+  const opciones = [];
+  let f = pieza.fila + dFila;
+  let c = pieza.columna + dCol;
+  
+  while (dentroDelTablero(f,c)) {
+    const fila = tablero[f];
+    if (!fila) break;
+    const celda = fila[c];
+    if (celda === null){
+      opciones.push([f,c]);
+    }
+    else {
+      if (pieza.blanco !== celda.blanco){
+        opciones.push([f,c]);
+      }
+      break;
+    }
+
+    f += dFila;
+    c += dCol;
+    
+  }
+  return opciones;
+}
+
+function paso(tablero,pieza,[x,y],limite){
+  let opciones = [];
+  let contador = 0;
+  while (true) {
+    nuevaFila = pieza.fila + x;
+    nuevaCol = pieza.columna + y; 
+    if ( (dentroDelTablero(nuevaFila, nuevaCol)) && 
+        ( (tablero[nuevaFila][nuevaCol] === null) || (tablero[nuevaFila][nuevaCol].blanco !== pieza.blanco) ) 
+    ){
+      opciones.push([nuevaFila, nuevaCol]);
+    }
+    if ((limite === undefined) || contador === limite) return opciones;
+    contador += 1;
+  }
+}
+
+</script>
+</body>
+</html>
